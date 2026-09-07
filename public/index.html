@@ -353,6 +353,11 @@
         <p class="view-sub" style="margin-bottom:14px;">Şu anda bu kişinin üzerinde bulunan kıyafetler ve hangi iş için, hangi tarihte teslim edildiği.</p>
         <div id="kdHoldings"></div>
       </div>
+      <div class="card">
+        <h3><span class="tag">İşlem geçmişi</span></h3>
+        <p class="view-sub" style="margin-bottom:14px;">Bu kişiyle ilgili tüm teslim, iade ve devir hareketleri.</p>
+        <div id="kdHistory"></div>
+      </div>
     </section>
 
     <!-- RAPOR -->
@@ -830,17 +835,20 @@ function renderIadeHoldings(){
   const wrap = document.getElementById('iadeHoldings');
   wrap.innerHTML = '';
   if(!pid){ wrap.innerHTML = '<div class="empty-state">Önce bir kişi seçin.</div>'; return; }
-  const rows = holdingsFor(pid);
-  if(rows.length===0){ wrap.innerHTML = '<div class="empty-state">Bu kişinin üzerinde kayıtlı kıyafet yok.</div>'; return; }
+  const lots = personLots(pid);
+  if(lots.length===0){ wrap.innerHTML = '<div class="empty-state">Bu kişinin üzerinde kayıtlı kıyafet yok.</div>'; return; }
   const box = document.createElement('div');
   box.className = 'holdings-box';
-  rows.forEach(r=>{
+  lots.forEach((l, idx)=>{
     const row = document.createElement('div');
     row.className = 'h-row';
     row.innerHTML = `
-      <div class="label">${itemLabel(r.tip, r.variant)}</div>
-      <div class="avail">mevcut: ${r.qty}</div>
-      <input type="number" min="0" max="${r.qty}" value="0" data-tip="${r.tip}" data-variant="${escapeHtml(r.variant)}" data-price="${r.price}" class="iade-qty">
+      <div class="label">
+        ${escapeHtml(itemLabel(l.tip, l.variant))}
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">${escapeHtml(l.job || 'İş belirtilmemiş')} · ${fmtDate(l.date)}</div>
+      </div>
+      <div class="avail">mevcut: ${l.qty}</div>
+      <input type="number" min="0" max="${l.qty}" value="0" data-idx="${idx}" class="iade-qty">
     `;
     box.appendChild(row);
   });
@@ -851,18 +859,30 @@ async function submitIade(){
   const tarih = document.getElementById('iadeTarih').value || todayISO();
   if(!pid){ showToast('Lütfen kişi seçin.'); return; }
 
+  const lots = personLots(pid); // renderIadeHoldings ile aynı sırada üretilir
   const inputs = document.querySelectorAll('.iade-qty');
   const items = [];
   inputs.forEach(inp=>{
     const q = parseInt(inp.value||'0',10);
     if(q>0){
-      items.push({ tip: inp.dataset.tip, variant: inp.dataset.variant, qty:q, price: parseFloat(inp.dataset.price) });
+      const lot = lots[parseInt(inp.dataset.idx,10)];
+      if(lot){
+        items.push({
+          tip: lot.tip,
+          variant: lot.variant,
+          qty: Math.min(q, lot.qty),
+          price: lot.price,
+          sourceJob: lot.job || '',
+          sourceDate: lot.date || '',
+        });
+      }
     }
   });
   if(items.length===0){ showToast('İade edilecek en az bir kıyafet seçin (adet giriniz).'); return; }
 
   const total = items.reduce((s,i)=>s+i.qty*i.price,0);
-  const tx = { id: uid(), type:'IADE', date: tarih, personId: pid, items, total, createdAt: Date.now() };
+  const jobSummary = [...new Set(items.map(i=>i.sourceJob).filter(Boolean))].join(', ');
+  const tx = { id: uid(), type:'IADE', date: tarih, personId: pid, job: jobSummary, items, total, createdAt: Date.now() };
   state.transactions.push(tx);
   await saveState();
   showToast('İade kaydedildi.');
@@ -1216,23 +1236,76 @@ function renderPersonDetail(){
   const wrap = document.getElementById('kdHoldings');
   if(lots.length===0){
     wrap.innerHTML = '<div class="empty-state"><span class="big">✅</span>Şu anda bu kişinin üzerinde kıyafet yok.</div>';
+  } else {
+    const rowsHtml = lots.map(l=>`
+      <tr>
+        <td>${escapeHtml(l.tip)}</td>
+        <td>${escapeHtml(itemLabel(l.tip, l.variant).replace(l.tip + ' — ', ''))}</td>
+        <td class="num">${l.qty}</td>
+        <td>${escapeHtml(l.job || '—')}</td>
+        <td>${fmtDate(l.date)}</td>
+      </tr>
+    `).join('');
+    wrap.innerHTML = `
+      <table>
+        <thead><tr><th>Ürün</th><th>Beden / Renk</th><th class="num">Adet</th><th>İş / organizasyon</th><th>Zimmet tarihi</th></tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
+  }
+
+  renderPersonHistory(currentPersonId);
+}
+
+/* Bir kişiyle ilgili TÜM hareketleri (teslim + iade + devir) kronolojik sırayla listeler. */
+function personHistory(personId){
+  return state.transactions
+    .filter(tx => tx.personId===personId || tx.fromId===personId || tx.toId===personId)
+    .slice()
+    .sort((a,b)=> a.createdAt - b.createdAt);
+}
+function describeTxForPerson(tx, personId){
+  const parts = tx.items.map(it=>{
+    let s = `${it.qty} ${itemLabel(it.tip, it.variant)}`;
+    if(tx.type==='IADE' && it.sourceJob){ s += ` (${it.sourceJob} işinden)`; }
+    return s;
+  }).join(', ');
+
+  if(tx.type==='TESLIM'){
+    return `${parts} teslim aldı${tx.job ? ' — ' + tx.job : ''}`;
+  }
+  if(tx.type==='IADE'){
+    return `${parts} iade etti`;
+  }
+  if(tx.type==='DEVIR'){
+    if(tx.fromId===personId){
+      return `${parts} — ${personById(tx.toId)?.name || '—'} kişisine devretti${tx.job ? ' (' + tx.job + ')' : ''}`;
+    } else {
+      return `${parts} — ${personById(tx.fromId)?.name || '—'} kişisinden devraldı${tx.job ? ' (' + tx.job + ')' : ''}`;
+    }
+  }
+  return parts;
+}
+function renderPersonHistory(personId){
+  const hist = personHistory(personId);
+  const wrap = document.getElementById('kdHistory');
+  if(hist.length===0){
+    wrap.innerHTML = '<div class="empty-state">Henüz işlem yok.</div>';
     return;
   }
-  const rowsHtml = lots.map(l=>`
-    <tr>
-      <td>${escapeHtml(l.tip)}</td>
-      <td>${escapeHtml(itemLabel(l.tip, l.variant).replace(l.tip + ' — ', ''))}</td>
-      <td class="num">${l.qty}</td>
-      <td>${escapeHtml(l.job || '—')}</td>
-      <td>${fmtDate(l.date)}</td>
-    </tr>
-  `).join('');
-  wrap.innerHTML = `
-    <table>
-      <thead><tr><th>Ürün</th><th>Beden / Renk</th><th class="num">Adet</th><th>İş / organizasyon</th><th>Zimmet tarihi</th></tr></thead>
-      <tbody>${rowsHtml}</tbody>
-    </table>
-  `;
+  wrap.innerHTML = hist.map(tx=>{
+    let badge = '';
+    if(tx.type==='TESLIM') badge = '<span class="badge teslim">Teslim</span>';
+    else if(tx.type==='IADE') badge = '<span class="badge iade">İade</span>';
+    else badge = '<span class="badge devir">Devir</span>';
+    return `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px;">
+        <div style="font-family:var(--font-mono);color:var(--ink-soft);white-space:nowrap;padding-top:1px;">${fmtDate(tx.date)}</div>
+        <div style="flex:none;">${badge}</div>
+        <div>${escapeHtml(describeTxForPerson(tx, personId))}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 /* ---------------------------------------------------------
