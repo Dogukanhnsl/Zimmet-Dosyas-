@@ -1,0 +1,17 @@
+{
+  "name": "zimmet-defteri-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kıyafet zimmet/teslim takip sistemi - kendi sunucunuzda çalışan sürüm",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "express": "^4.19.2"
+  }
+}

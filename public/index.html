@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zimmet Defteri — Kıyafet Teslim Takip</title>
+<style>
+  :root{
+    --ink:#1C2320;
+    --ink-soft:#3C4640;
+    --paper:#EEF1EC;
+    --card:#FCFDFB;
+    --line:#D6DBD2;
+    --line-soft:#E4E7E0;
+    --accent:#2F6F55;
+    --accent-dark:#234F3D;
+    --amber:#B9821F;
+    --amber-bg:#FBF1DD;
+    --danger:#AE3A32;
+    --danger-bg:#FBEAE8;
+    --sidebar:#1C2320;
+    --sidebar-soft:#2B342F;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-ui);
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:#fff;}
+
+  /* Layout */
+  #app{display:flex;min-height:100vh;}
+  #sidebar{
+    width:230px;flex:none;background:var(--sidebar);color:#EDEFEA;
+    display:flex;flex-direction:column;padding:22px 0;
+  }
+  #sidebar .brand{
+    padding:0 20px 20px 20px;border-bottom:1px solid var(--sidebar-soft);margin-bottom:10px;
+  }
+  #sidebar .brand .mark{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#8FA89A;margin-bottom:4px;
+  }
+  #sidebar .brand h1{
+    font-size:19px;margin:0;font-weight:700;letter-spacing:-0.01em;line-height:1.25;
+  }
+  nav.tabs{display:flex;flex-direction:column;gap:1px;padding:10px 10px;flex:1;}
+  nav.tabs button{
+    all:unset;cursor:pointer;color:#C7CFC7;padding:11px 12px;border-radius:7px;
+    font-size:14.5px;display:flex;align-items:center;gap:10px;transition:background .12s, color .12s;
+  }
+  nav.tabs button .num{font-family:var(--font-mono);font-size:12px;color:#6C7C71;width:16px;}
+  nav.tabs button:hover{background:var(--sidebar-soft);color:#fff;}
+  nav.tabs button.active{background:var(--accent);color:#fff;}
+  nav.tabs button.active .num{color:#DDEDE5;}
+  #sidebar .foot{padding:14px 20px 4px 20px;border-top:1px solid var(--sidebar-soft);}
+  #sidebar .foot .risk-label{font-size:11px;color:#8FA89A;letter-spacing:.03em;}
+  #sidebar .foot .risk-val{font-family:var(--font-mono);font-size:17px;color:#EDEFEA;font-weight:600;margin-top:2px;}
+
+  main{flex:1;min-width:0;padding:32px 40px 60px 40px;}
+  .view{display:none;max-width:980px;}
+  .view.active{display:block;animation:fade .15s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+
+  h2.view-title{font-size:23px;margin:0 0 4px 0;font-weight:700;letter-spacing:-0.01em;}
+  p.view-sub{color:var(--ink-soft);font-size:14px;margin:0 0 26px 0;max-width:60ch;line-height:1.5;}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:22px 24px;margin-bottom:20px;
+  }
+  .card h3{margin:0 0 16px 0;font-size:15px;font-weight:700;}
+  .card h3 .tag{font-family:var(--font-mono);font-size:11px;color:var(--accent);font-weight:600;margin-right:8px;}
+
+  label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:600;}
+  input[type=text], input[type=number], input[type=date], input[type=tel], select, textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;
+    background:#fff;font-family:var(--font-ui);font-size:14px;color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent);}
+  .field{margin-bottom:14px;}
+  .row{display:flex;gap:12px;}
+  .row > *{flex:1;min-width:0;}
+
+  button.btn{
+    all:unset;cursor:pointer;padding:9px 16px;border-radius:6px;font-size:13.5px;font-weight:600;
+    background:var(--accent);color:#fff;text-align:center;
+  }
+  button.btn:hover{background:var(--accent-dark);}
+  button.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line);}
+  button.btn.secondary:hover{background:var(--line-soft);}
+  button.btn.danger{background:var(--danger-bg);color:var(--danger);}
+  button.btn.danger:hover{background:#F5D9D6;}
+  button.btn.ghost{background:transparent;color:var(--accent);padding:6px 4px;}
+  button.btn.ghost:hover{text-decoration:underline;}
+  button.btn:disabled{opacity:.45;cursor:not-allowed;}
+  button.btn.block{width:100%;}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  table th{
+    text-align:left;font-size:11.5px;color:var(--ink-soft);font-weight:600;
+    padding:8px 10px;border-bottom:1px solid var(--line);letter-spacing:.01em;
+  }
+  table td{padding:9px 10px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+  table tr:last-child td{border-bottom:none;}
+  td.num, th.num{font-family:var(--font-mono);text-align:right;}
+  .empty-state{padding:26px 10px;text-align:center;color:var(--ink-soft);font-size:13.5px;}
+  .empty-state .big{font-size:26px;display:block;margin-bottom:6px;}
+
+  .item-row{display:grid;grid-template-columns:1.3fr 1fr 0.7fr 0.9fr 28px;gap:10px;align-items:end;margin-bottom:10px;}
+  .item-row .price-disp{font-family:var(--font-mono);font-size:13.5px;padding:9px 0;color:var(--ink-soft);}
+  .item-row .rm{all:unset;cursor:pointer;color:var(--danger);font-size:18px;line-height:1;padding-bottom:9px;text-align:center;}
+  .item-row .rm:hover{color:#7A231D;}
+  .totals-bar{display:flex;justify-content:flex-end;gap:26px;padding-top:12px;margin-top:6px;border-top:1px solid var(--line);}
+  .totals-bar .t-label{font-size:12.5px;color:var(--ink-soft);}
+  .totals-bar .t-val{font-family:var(--font-mono);font-weight:700;font-size:18px;}
+
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em;}
+  .badge.teslim{background:var(--amber-bg);color:var(--amber);}
+  .badge.iade{background:#E1EFE8;color:var(--accent-dark);}
+  .badge.devir{background:#E7E9F3;color:#3B4392;}
+
+  .person-pill{display:inline-flex;align-items:center;gap:6px;}
+  .person-pill .avatar{
+    width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+    font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;
+  }
+
+  .callout{background:var(--amber-bg);border:1px solid #E9D5A6;color:#7A5A15;padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:16px;}
+  .callout.info{background:#E9EEF3;border-color:#C9D6E3;color:#33495C;}
+  .hint{font-size:12px;color:var(--ink-soft);margin-top:-8px;margin-bottom:14px;}
+
+  .holdings-box{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px;}
+  .holdings-box .h-row{
+    display:flex;align-items:center;gap:12px;padding:9px 12px;border-bottom:1px solid var(--line-soft);
+    font-size:13.5px;
+  }
+  .holdings-box .h-row:last-child{border-bottom:none;}
+  .holdings-box .h-row .label{flex:1;}
+  .holdings-box .h-row .avail{font-family:var(--font-mono);color:var(--ink-soft);font-size:12px;width:70px;}
+  .holdings-box .h-row input[type=number]{width:70px;}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;}
+  .kpi .k-label{font-size:12px;color:var(--ink-soft);margin-bottom:6px;}
+  .kpi .k-val{font-family:var(--font-mono);font-size:26px;font-weight:700;}
+  .kpi .k-val.amber{color:var(--amber);}
+  .kpi .k-val.accent{color:var(--accent-dark);}
+
+  .modal-backdrop{
+    display:none;position:fixed;inset:0;background:rgba(20,24,20,.45);z-index:50;
+    align-items:center;justify-content:center;
+  }
+  .modal-backdrop.show{display:flex;}
+  .modal{background:#fff;border-radius:10px;padding:24px;width:420px;max-width:92vw;}
+  .modal h3{margin:0 0 14px 0;}
+  .modal .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+
+  .people-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  @media (max-width:720px){.people-grid{grid-template-columns:1fr;}}
+  .person-card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}
+  .person-card .p-name{font-weight:600;font-size:14px;}
+  .person-card .p-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+
+  #toast{
+    position:fixed;bottom:22px;right:22px;background:var(--ink);color:#fff;padding:11px 18px;
+    border-radius:7px;font-size:13.5px;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:100;
+    opacity:0;transform:translateY(8px);transition:opacity .2s, transform .2s;pointer-events:none;
+  }
+  #toast.show{opacity:1;transform:translateY(0);}
+
+  /* Print */
+  #print-area{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #print-area, #print-area *{visibility:visible;}
+    #print-area{display:block;position:absolute;top:0;left:0;width:100%;padding:20px;}
+  }
+  .receipt-head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1C2320;padding-bottom:14px;margin-bottom:18px;}
+  .receipt-head h1{font-size:19px;margin:0 0 4px 0;}
+  .receipt-head .r-sub{font-size:12px;color:#555;}
+  .receipt-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-bottom:18px;font-size:13px;}
+  .receipt-meta .m-label{color:#666;font-size:11px;text-transform:none;}
+  .receipt-meta .m-val{font-weight:600;}
+  .receipt-table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  .receipt-table th{background:#EEF1EC;font-size:11.5px;text-align:left;padding:7px 9px;border:1px solid #ccc;}
+  .receipt-table td{padding:7px 9px;border:1px solid #ccc;font-size:13px;}
+  .receipt-total{text-align:right;font-size:15px;font-weight:700;margin-bottom:30px;}
+  .sign-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px;}
+  .sign-box .sign-line{border-top:1px solid #333;margin-top:46px;padding-top:6px;font-size:12px;color:#333;}
+  .receipt-note{font-size:11.5px;color:#555;margin-top:18px;line-height:1.5;}
+
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-thumb{background:#c7cdc3;border-radius:6px;}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="mark">ZİMMET DEFTERİ</div>
+      <h1>Kıyafet Teslim Takip</h1>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-view="dashboard" class="active"><span class="num">01</span>Ana sayfa</button>
+      <button data-view="teslim"><span class="num">02</span>Zimmet oluştur</button>
+      <button data-view="devir"><span class="num">03</span>Devir</button>
+      <button data-view="iade"><span class="num">04</span>İade</button>
+      <button data-view="kisiler"><span class="num">05</span>Kişiler</button>
+      <button data-view="rapor"><span class="num">06</span>Durum raporu</button>
+      <button data-view="gecmis"><span class="num">07</span>Geçmiş kayıtlar</button>
+    </nav>
+    <div class="foot">
+      <div class="risk-label">Dışarıdaki toplam değer</div>
+      <div class="risk-val" id="sidebarRisk">— ₺</div>
+    </div>
+  </aside>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <h2 class="view-title">Ana sayfa</h2>
+      <p class="view-sub">Zimmetteki kıyafetlerin genel durumu.</p>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="card">
+        <h3><span class="tag">Son hareketler</span></h3>
+        <div id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- TESLİM (ZİMMET OLUŞTUR) -->
+    <section class="view" id="view-teslim">
+      <h2 class="view-title">Kıyafet teslim tutanağı oluştur</h2>
+      <p class="view-sub">Depodan bir kişiye teslim edilecek kıyafetleri seçip tutanak oluşturun. Kaydettikten sonra yazdırabilirsiniz.</p>
+      <div class="card">
+        <div class="row">
+          <div class="field">
+            <label>Tarih</label>
+            <input type="date" id="teslimTarih">
+          </div>
+          <div class="field">
+            <label>Teslim alan kişi</label>
+            <select id="teslimKisi"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Hangi iş için teslim alınıyor</label>
+          <input type="text" id="teslimIs" placeholder="Örn: Migros Ataşehir — Envanter Sayımı">
+        </div>
+        <div id="teslimNoPerson" class="callout" style="display:none;">
+          Henüz kayıtlı kişi yok. Önce <a href="#" onclick="goto('kisiler');return false;" style="color:#7A5A15;font-weight:700;">Kişiler</a> sekmesinden bir kişi ekleyin.
+        </div>
+
+        <h3 style="margin-top:22px;"><span class="tag">Kalemler</span></h3>
+        <div id="teslimItems"></div>
+        <button class="btn secondary" onclick="addItemRow('teslim')">+ Kalem ekle</button>
+
+        <div class="totals-bar">
+          <div><div class="t-label">Genel toplam</div><div class="t-val" id="teslimToplam">0,00 ₺</div></div>
+        </div>
+      </div>
+      <button class="btn" onclick="submitTeslim()">Tutanağı kaydet ve yazdır</button>
+    </section>
+
+    <!-- DEVİR -->
+    <section class="view" id="view-devir">
+      <h2 class="view-title">Kıyafeti başka kişiye devret</h2>
+      <p class="view-sub">Depoya iade etmeden, bir kişinin üzerindeki kıyafeti doğrudan başka bir kişinin carisine aktarın.</p>
+      <div class="card">
+        <div class="row">
+          <div class="field">
+            <label>Kimden</label>
+            <select id="devirFrom" onchange="renderDevirHoldings()"></select>
+          </div>
+          <div class="field">
+            <label>Kime</label>
+            <select id="devirTo"></select>
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Tarih</label>
+            <input type="date" id="devirTarih">
+          </div>
+          <div class="field">
+            <label>Açıklama / iş</label>
+            <input type="text" id="devirIs" placeholder="Örn: Ertesi gün aynı işte devam edecek">
+          </div>
+        </div>
+        <h3 style="margin-top:18px;"><span class="tag">Devredilecek kıyafetler</span></h3>
+        <div id="devirHoldings"></div>
+      </div>
+      <button class="btn" onclick="submitDevir()">Devri kaydet</button>
+    </section>
+
+    <!-- İADE -->
+    <section class="view" id="view-iade">
+      <h2 class="view-title">Depoya iade al</h2>
+      <p class="view-sub">Bir kişiden depoya geri alınan kıyafetleri işleyin.</p>
+      <div class="card">
+        <div class="row">
+          <div class="field">
+            <label>Kişi</label>
+            <select id="iadeKisi" onchange="renderIadeHoldings()"></select>
+          </div>
+          <div class="field">
+            <label>Tarih</label>
+            <input type="date" id="iadeTarih">
+          </div>
+        </div>
+        <h3 style="margin-top:18px;"><span class="tag">İade edilecek kıyafetler</span></h3>
+        <div id="iadeHoldings"></div>
+      </div>
+      <button class="btn" onclick="submitIade()">İadeyi kaydet</button>
+    </section>
+
+    <!-- KİŞİLER -->
+    <section class="view" id="view-kisiler">
+      <h2 class="view-title">Kişiler</h2>
+      <p class="view-sub">Kıyafet teslim alacak supervizör / part-time listesi. Yeni tutanak oluştururken bu listeden seçilir.</p>
+      <div class="card">
+        <h3><span class="tag">Yeni kişi ekle</span></h3>
+        <div class="row">
+          <div class="field"><label>Ad soyad</label><input type="text" id="newPersonName" placeholder="Örn: Ahmet Yılmaz"></div>
+          <div class="field"><label>Telefon (opsiyonel)</label><input type="tel" id="newPersonPhone" placeholder="05xx xxx xx xx"></div>
+          <div class="field"><label>Görev / not (opsiyonel)</label><input type="text" id="newPersonNote" placeholder="Örn: Saha supervizörü"></div>
+        </div>
+        <button class="btn" onclick="addPerson()">Kişi ekle</button>
+      </div>
+      <div class="card">
+        <h3><span class="tag" id="peopleCount">0</span>Kayıtlı kişiler</h3>
+        <div class="people-grid" id="peopleList"></div>
+      </div>
+    </section>
+
+    <!-- RAPOR -->
+    <section class="view" id="view-rapor">
+      <h2 class="view-title">Durum raporu</h2>
+      <p class="view-sub">Kimde ne kadar kıyafet var, depoya henüz iade edilmemiş toplam değer.</p>
+      <div class="kpi-grid" id="raporKpi"></div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <h3 style="margin:0;"><span class="tag">Kişi bazında zimmet</span></h3>
+          <div style="display:flex;gap:8px;">
+            <button class="btn secondary" onclick="downloadReportCSV()">CSV indir</button>
+            <button class="btn secondary" onclick="printReport()">Raporu yazdır</button>
+          </div>
+        </div>
+        <div id="reportBody"></div>
+      </div>
+    </section>
+
+    <!-- GEÇMİŞ -->
+    <section class="view" id="view-gecmis">
+      <h2 class="view-title">Geçmiş kayıtlar</h2>
+      <p class="view-sub">Tüm teslim, devir ve iade hareketleri. Teslim tutanaklarını buradan tekrar yazdırabilirsiniz.</p>
+      <div class="card">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+          <button class="btn secondary" onclick="downloadBackupJSON()">Tüm veriyi yedekle (.json indir)</button>
+        </div>
+        <table>
+          <thead><tr><th>Tarih</th><th>Tür</th><th>Kişi(ler)</th><th>İş / açıklama</th><th class="num">Tutar</th><th></th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+        <div id="historyEmpty" class="empty-state" style="display:none;"><span class="big">📋</span>Henüz kayıt yok.</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Person quick-add modal (not currently used inline, reserved) -->
+<div class="modal-backdrop" id="confirmModal">
+  <div class="modal">
+    <h3 id="confirmTitle">Emin misiniz?</h3>
+    <p id="confirmBody" style="font-size:13.5px;color:var(--ink-soft);"></p>
+    <div class="actions">
+      <button class="btn secondary" onclick="closeConfirm()">Vazgeç</button>
+      <button class="btn danger" id="confirmOkBtn">Onayla</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="loginGate" class="modal-backdrop">
+  <div class="modal">
+    <h3>Zimmet Defteri — Giriş</h3>
+    <div class="field">
+      <label>Şifre</label>
+      <input type="password" id="loginPw" placeholder="Şifreyi girin" onkeydown="if(event.key==='Enter')submitLogin()">
+    </div>
+    <div id="loginErr" style="display:none;color:var(--danger);font-size:12.5px;margin-bottom:8px;">Şifre hatalı. Tekrar deneyin.</div>
+    <div class="actions">
+      <button class="btn block" onclick="submitLogin()">Giriş yap</button>
+    </div>
+  </div>
+</div>
+
+<div id="print-area"></div>
+
+<script>
+/* ---------------------------------------------------------
+   CATALOG
+--------------------------------------------------------- */
+const CATALOG = {
+  'Ceket':    { price: 1250, sizes: [36,38,40,42,44,46,48,50,52,54,56,60] },
+  'Pantolon': { price: 1250, sizes: [36,38,40,42,44,46,48,50,52,54,56,58,60] },
+  'Jile':     { price: 750,  sizes: [36,38,40] },
+  'Kravat':   { price: 250,  color: true },
+  'Fular':    { price: 250,  color: true },
+};
+const TIP_LIST = Object.keys(CATALOG);
+
+/* ---------------------------------------------------------
+   STORAGE
+--------------------------------------------------------- */
+let state = { people: [], transactions: [] };
+let loaded = false;
+
+async function loadState(){
+  try{
+    const res = await fetch('/api/state');
+    if(res.status === 401){ showLoginGate(); return; }
+    if(res.ok){
+      const data = await res.json();
+      state = data && typeof data === 'object' ? data : { people: [], transactions: [] };
+      state.people = state.people || [];
+      state.transactions = state.transactions || [];
+    }
+  }catch(e){
+    showToast('Sunucuya bağlanılamadı. Bağlantınızı kontrol edin.');
+  }
+  loaded = true;
+}
+
+async function saveState(){
+  try{
+    const res = await fetch('/api/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    });
+    if(res.status === 401){ showLoginGate(); return; }
+    if(!res.ok){ showToast('Kayıt sırasında bir sorun oluştu.'); }
+  }catch(e){
+    showToast('Sunucuya bağlanılamadı. Kayıt gönderilemedi.');
+  }
+}
+
+/* ---------------------------------------------------------
+   LOGIN GATE
+--------------------------------------------------------- */
+function showLoginGate(){
+  document.getElementById('loginGate').classList.add('show');
+}
+function hideLoginGate(){
+  document.getElementById('loginGate').classList.remove('show');
+}
+async function submitLogin(){
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginErr');
+  err.style.display = 'none';
+  try{
+    const res = await fetch('/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
+    });
+    if(res.ok){
+      hideLoginGate();
+      document.getElementById('loginPw').value = '';
+      await loadState();
+      renderAll();
+    } else {
+      err.style.display = 'block';
+    }
+  }catch(e){
+    err.textContent = 'Sunucuya bağlanılamadı.';
+    err.style.display = 'block';
+  }
+}
+
+/* ---------------------------------------------------------
+   HELPERS
+--------------------------------------------------------- */
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtMoney(n){ return (n||0).toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₺'; }
+function fmtDate(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+function personById(id){ return state.people.find(p=>p.id===id); }
+function initials(name){
+  return name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toLocaleUpperCase('tr-TR');
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function itemKey(tip, variant){
+  return tip + '|' + String(variant).trim().toLocaleLowerCase('tr-TR');
+}
+function itemLabel(tip, variant){
+  if(CATALOG[tip].sizes) return `${tip} — ${variant} Beden`;
+  return `${tip} — ${variant}`;
+}
+function itemPrice(tip){ return CATALOG[tip].price; }
+
+/* Compute current holdings per person: { personId: { key: {tip,variant,qty,price} } } */
+function computeBalances(){
+  const bal = {};
+  function ensure(pid){ if(!bal[pid]) bal[pid] = {}; return bal[pid]; }
+  function apply(pid, items, sign){
+    const b = ensure(pid);
+    items.forEach(it=>{
+      const k = itemKey(it.tip, it.variant);
+      if(!b[k]) b[k] = { tip: it.tip, variant: it.variant, qty:0, price: it.price };
+      b[k].qty += sign * it.qty;
+    });
+  }
+  state.transactions.forEach(tx=>{
+    if(tx.type === 'TESLIM'){ apply(tx.personId, tx.items, +1); }
+    else if(tx.type === 'IADE'){ apply(tx.personId, tx.items, -1); }
+    else if(tx.type === 'DEVIR'){ apply(tx.fromId, tx.items, -1); apply(tx.toId, tx.items, +1); }
+  });
+  return bal;
+}
+function holdingsFor(personId){
+  const bal = computeBalances();
+  const rows = Object.values(bal[personId] || {}).filter(r=>r.qty > 0.0001);
+  rows.sort((a,b)=> a.tip===b.tip ? String(a.variant).localeCompare(String(b.variant)) : a.tip.localeCompare(b.tip));
+  return rows;
+}
+function totalOutstandingValue(){
+  const bal = computeBalances();
+  let total = 0, count = 0;
+  Object.values(bal).forEach(rows=>{
+    Object.values(rows).forEach(r=>{ if(r.qty>0){ total += r.qty*r.price; count += r.qty; } });
+  });
+  return {total, count};
+}
+
+/* ---------------------------------------------------------
+   NAVIGATION
+--------------------------------------------------------- */
+function goto(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelector(`nav.tabs button[data-view="${view}"]`).classList.add('active');
+  renderAll();
+}
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-view]');
+  if(btn) goto(btn.dataset.view);
+});
+
+/* ---------------------------------------------------------
+   PEOPLE SELECT OPTIONS (shared util)
+--------------------------------------------------------- */
+function fillPeopleSelect(sel, excludeId){
+  sel.innerHTML = '';
+  const list = state.people.filter(p=>p.id!==excludeId);
+  if(list.length===0){
+    sel.innerHTML = '<option value="">— kişi yok —</option>';
+    return;
+  }
+  list.forEach(p=>{
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name;
+    sel.appendChild(o);
+  });
+}
+
+/* ---------------------------------------------------------
+   ITEM ROWS (Teslim form)
+--------------------------------------------------------- */
+let teslimRows = [];
+function addItemRow(){
+  teslimRows.push({ id: uid(), tip: 'Ceket', variant: CATALOG['Ceket'].sizes[3], qty: 1 });
+  renderTeslimItems();
+}
+function removeItemRow(id){
+  teslimRows = teslimRows.filter(r=>r.id!==id);
+  renderTeslimItems();
+}
+function renderTeslimItems(){
+  const wrap = document.getElementById('teslimItems');
+  wrap.innerHTML = '';
+  teslimRows.forEach(row=>{
+    const cat = CATALOG[row.tip];
+    const div = document.createElement('div');
+    div.className = 'item-row';
+
+    let variantHtml;
+    if(cat.sizes){
+      variantHtml = `<select onchange="updateRow('${row.id}','variant',this.value)">
+        ${cat.sizes.map(s=>`<option value="${s}" ${String(row.variant)===String(s)?'selected':''}>${s} Beden</option>`).join('')}
+      </select>`;
+    } else {
+      variantHtml = `<input type="text" placeholder="Renk (örn: Bordo)" value="${row.variant && CATALOG[row.tip].color ? escapeHtml(row.variant): ''}" oninput="updateRow('${row.id}','variant',this.value)">`;
+    }
+
+    div.innerHTML = `
+      <div class="field" style="margin:0;">
+        <label>Ürün</label>
+        <select onchange="updateRow('${row.id}','tip',this.value)">
+          ${TIP_LIST.map(t=>`<option value="${t}" ${row.tip===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="margin:0;">
+        <label>${cat.sizes ? 'Beden' : 'Renk'}</label>
+        ${variantHtml}
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Adet</label>
+        <input type="number" min="1" value="${row.qty}" oninput="updateRow('${row.id}','qty',this.value)">
+      </div>
+      <div class="field" style="margin:0;">
+        <label>Birim fiyat</label>
+        <div class="price-disp">${fmtMoney(itemPrice(row.tip))}</div>
+      </div>
+      <button class="rm" title="Kaldır" onclick="removeItemRow('${row.id}')">×</button>
+    `;
+    wrap.appendChild(div);
+  });
+  if(teslimRows.length===0){
+    wrap.innerHTML = '<div class="empty-state">Henüz kalem eklenmedi. "Kalem ekle" ile başlayın.</div>';
+  }
+  updateTeslimTotal();
+}
+function updateRow(id, field, value){
+  const row = teslimRows.find(r=>r.id===id);
+  if(!row) return;
+  if(field==='tip'){
+    row.tip = value;
+    const cat = CATALOG[value];
+    row.variant = cat.sizes ? cat.sizes[3] : '';
+  } else if(field==='qty'){
+    row.qty = Math.max(1, parseInt(value||'1',10));
+  } else {
+    row[field] = value;
+  }
+  renderTeslimItems();
+}
+function updateTeslimTotal(){
+  let total = 0;
+  teslimRows.forEach(r=>{ total += (r.qty||0) * itemPrice(r.tip); });
+  document.getElementById('teslimToplam').textContent = fmtMoney(total);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function submitTeslim(){
+  const personId = document.getElementById('teslimKisi').value;
+  const tarih = document.getElementById('teslimTarih').value || todayISO();
+  const is = document.getElementById('teslimIs').value.trim();
+
+  if(!personId){ showToast('Lütfen teslim alan kişiyi seçin.'); return; }
+  if(teslimRows.length===0){ showToast('Lütfen en az bir kalem ekleyin.'); return; }
+  for(const r of teslimRows){
+    if(!CATALOG[r.tip].sizes && !String(r.variant||'').trim()){
+      showToast(`${r.tip} için renk girmelisiniz.`); return;
+    }
+  }
+
+  const items = teslimRows.map(r=>({
+    tip: r.tip,
+    variant: CATALOG[r.tip].sizes ? r.variant : String(r.variant).trim(),
+    qty: r.qty,
+    price: itemPrice(r.tip),
+  }));
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+
+  const tx = { id: uid(), type:'TESLIM', date: tarih, personId, job: is, items, total, createdAt: Date.now() };
+  state.transactions.push(tx);
+  await saveState();
+  showToast('Tutanak kaydedildi.');
+
+  teslimRows = [];
+  document.getElementById('teslimIs').value = '';
+  renderTeslimItems();
+  renderAll();
+
+  printReceipt(tx);
+}
+
+/* ---------------------------------------------------------
+   DEVİR
+--------------------------------------------------------- */
+function renderDevirHoldings(){
+  const fromId = document.getElementById('devirFrom').value;
+  const wrap = document.getElementById('devirHoldings');
+  wrap.innerHTML = '';
+  if(!fromId){ wrap.innerHTML = '<div class="empty-state">Önce bir kişi seçin.</div>'; return; }
+  const rows = holdingsFor(fromId);
+  if(rows.length===0){ wrap.innerHTML = '<div class="empty-state">Bu kişinin üzerinde kayıtlı kıyafet yok.</div>'; return; }
+  const box = document.createElement('div');
+  box.className = 'holdings-box';
+  rows.forEach(r=>{
+    const k = itemKey(r.tip, r.variant);
+    const row = document.createElement('div');
+    row.className = 'h-row';
+    row.innerHTML = `
+      <div class="label">${itemLabel(r.tip, r.variant)}</div>
+      <div class="avail">mevcut: ${r.qty}</div>
+      <input type="number" min="0" max="${r.qty}" value="0" data-key="${k}" data-tip="${r.tip}" data-variant="${escapeHtml(r.variant)}" data-price="${r.price}" class="devir-qty">
+    `;
+    box.appendChild(row);
+  });
+  wrap.appendChild(box);
+}
+async function submitDevir(){
+  const fromId = document.getElementById('devirFrom').value;
+  const toId = document.getElementById('devirTo').value;
+  const tarih = document.getElementById('devirTarih').value || todayISO();
+  const is = document.getElementById('devirIs').value.trim();
+
+  if(!fromId || !toId){ showToast('Kimden ve kime alanlarını seçin.'); return; }
+  if(fromId === toId){ showToast('Aynı kişiye devir yapılamaz.'); return; }
+
+  const inputs = document.querySelectorAll('.devir-qty');
+  const items = [];
+  inputs.forEach(inp=>{
+    const q = parseInt(inp.value||'0',10);
+    if(q>0){
+      items.push({ tip: inp.dataset.tip, variant: inp.dataset.variant, qty:q, price: parseFloat(inp.dataset.price) });
+    }
+  });
+  if(items.length===0){ showToast('Devredilecek en az bir kıyafet seçin (adet giriniz).'); return; }
+
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+  const tx = { id: uid(), type:'DEVIR', date: tarih, fromId, toId, job: is, items, total, createdAt: Date.now() };
+  state.transactions.push(tx);
+  await saveState();
+  showToast('Devir kaydedildi.');
+  document.getElementById('devirIs').value = '';
+  renderDevirHoldings();
+  renderAll();
+}
+
+/* ---------------------------------------------------------
+   İADE
+--------------------------------------------------------- */
+function renderIadeHoldings(){
+  const pid = document.getElementById('iadeKisi').value;
+  const wrap = document.getElementById('iadeHoldings');
+  wrap.innerHTML = '';
+  if(!pid){ wrap.innerHTML = '<div class="empty-state">Önce bir kişi seçin.</div>'; return; }
+  const rows = holdingsFor(pid);
+  if(rows.length===0){ wrap.innerHTML = '<div class="empty-state">Bu kişinin üzerinde kayıtlı kıyafet yok.</div>'; return; }
+  const box = document.createElement('div');
+  box.className = 'holdings-box';
+  rows.forEach(r=>{
+    const row = document.createElement('div');
+    row.className = 'h-row';
+    row.innerHTML = `
+      <div class="label">${itemLabel(r.tip, r.variant)}</div>
+      <div class="avail">mevcut: ${r.qty}</div>
+      <input type="number" min="0" max="${r.qty}" value="0" data-tip="${r.tip}" data-variant="${escapeHtml(r.variant)}" data-price="${r.price}" class="iade-qty">
+    `;
+    box.appendChild(row);
+  });
+  wrap.appendChild(box);
+}
+async function submitIade(){
+  const pid = document.getElementById('iadeKisi').value;
+  const tarih = document.getElementById('iadeTarih').value || todayISO();
+  if(!pid){ showToast('Lütfen kişi seçin.'); return; }
+
+  const inputs = document.querySelectorAll('.iade-qty');
+  const items = [];
+  inputs.forEach(inp=>{
+    const q = parseInt(inp.value||'0',10);
+    if(q>0){
+      items.push({ tip: inp.dataset.tip, variant: inp.dataset.variant, qty:q, price: parseFloat(inp.dataset.price) });
+    }
+  });
+  if(items.length===0){ showToast('İade edilecek en az bir kıyafet seçin (adet giriniz).'); return; }
+
+  const total = items.reduce((s,i)=>s+i.qty*i.price,0);
+  const tx = { id: uid(), type:'IADE', date: tarih, personId: pid, items, total, createdAt: Date.now() };
+  state.transactions.push(tx);
+  await saveState();
+  showToast('İade kaydedildi.');
+  renderIadeHoldings();
+  renderAll();
+}
+
+/* ---------------------------------------------------------
+   KİŞİLER
+--------------------------------------------------------- */
+async function addPerson(){
+  const name = document.getElementById('newPersonName').value.trim();
+  const phone = document.getElementById('newPersonPhone').value.trim();
+  const note = document.getElementById('newPersonNote').value.trim();
+  if(!name){ showToast('Ad soyad girin.'); return; }
+  state.people.push({ id: uid(), name, phone, note, createdAt: Date.now() });
+  await saveState();
+  document.getElementById('newPersonName').value = '';
+  document.getElementById('newPersonPhone').value = '';
+  document.getElementById('newPersonNote').value = '';
+  showToast('Kişi eklendi.');
+  renderAll();
+}
+async function deletePerson(id){
+  const used = state.transactions.some(tx =>
+    tx.personId===id || tx.fromId===id || tx.toId===id
+  );
+  if(used){
+    showToast('Bu kişiye ait hareket kayıtları olduğu için silinemiyor.');
+    return;
+  }
+  state.people = state.people.filter(p=>p.id!==id);
+  await saveState();
+  renderAll();
+}
+function renderPeople(){
+  const wrap = document.getElementById('peopleList');
+  document.getElementById('peopleCount').textContent = state.people.length;
+  if(state.people.length===0){
+    wrap.innerHTML = '<div class="empty-state"><span class="big">👤</span>Henüz kişi eklenmedi.</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  state.people.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr')).forEach(p=>{
+    const rows = holdingsFor(p.id);
+    const qty = rows.reduce((s,r)=>s+r.qty,0);
+    const div = document.createElement('div');
+    div.className = 'person-card';
+    div.innerHTML = `
+      <div>
+        <div class="p-name">${escapeHtml(p.name)}</div>
+        <div class="p-meta">${p.phone ? escapeHtml(p.phone)+' · ' : ''}${qty>0 ? qty+' parça üzerinde' : 'üzerinde kıyafet yok'}</div>
+      </div>
+      <button class="btn ghost" onclick="deletePerson('${p.id}')">Sil</button>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+/* ---------------------------------------------------------
+   DASHBOARD
+--------------------------------------------------------- */
+function renderDashboard(){
+  const {total, count} = totalOutstandingValue();
+  document.getElementById('sidebarRisk').textContent = fmtMoney(total);
+
+  const peopleWithItems = Object.entries(computeBalances()).filter(([pid, rows])=>
+    Object.values(rows).some(r=>r.qty>0)
+  ).length;
+
+  const kpiWrap = document.getElementById('kpiGrid');
+  kpiWrap.innerHTML = `
+    <div class="kpi"><div class="k-label">Dışarıdaki parça sayısı</div><div class="k-val amber">${count}</div></div>
+    <div class="kpi"><div class="k-label">Dışarıdaki toplam değer</div><div class="k-val">${fmtMoney(total)}</div></div>
+    <div class="kpi"><div class="k-label">Zimmetli kişi sayısı</div><div class="k-val accent">${peopleWithItems}</div></div>
+  `;
+
+  const recent = state.transactions.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,8);
+  const rWrap = document.getElementById('recentList');
+  if(recent.length===0){
+    rWrap.innerHTML = '<div class="empty-state"><span class="big">🗂️</span>Henüz hareket kaydı yok. "Zimmet oluştur" ile başlayın.</div>';
+    return;
+  }
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `<thead><tr><th>Tarih</th><th>Tür</th><th>Kişi(ler)</th><th class="num">Tutar</th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+  recent.forEach(tx=>{
+    tbody.appendChild(txRow(tx, false));
+  });
+  tbl.appendChild(tbody);
+  rWrap.innerHTML = '';
+  rWrap.appendChild(tbl);
+}
+
+/* ---------------------------------------------------------
+   RAPOR
+--------------------------------------------------------- */
+function renderRapor(){
+  const bal = computeBalances();
+  let totalVal = 0, totalQty = 0, peopleCount = 0;
+  const rWrap = document.getElementById('reportBody');
+  rWrap.innerHTML = '';
+
+  const entries = state.people
+    .map(p=>({ person:p, rows: Object.values(bal[p.id]||{}).filter(r=>r.qty>0) }))
+    .filter(e=>e.rows.length>0)
+    .sort((a,b)=>a.person.name.localeCompare(b.person.name,'tr'));
+
+  entries.forEach(e=>{
+    peopleCount++;
+    const box = document.createElement('div');
+    box.style.marginBottom = '18px';
+    let sum = 0;
+    const rowsHtml = e.rows.map(r=>{
+      const val = r.qty*r.price;
+      sum += val; totalVal += val; totalQty += r.qty;
+      return `<tr><td>${itemLabel(r.tip,r.variant)}</td><td class="num">${r.qty}</td><td class="num">${fmtMoney(r.price)}</td><td class="num">${fmtMoney(val)}</td></tr>`;
+    }).join('');
+    box.innerHTML = `
+      <div class="person-pill" style="margin-bottom:8px;">
+        <div class="avatar">${initials(e.person.name)}</div>
+        <strong>${escapeHtml(e.person.name)}</strong>
+        <span style="color:var(--ink-soft);font-size:12.5px;">— ${fmtMoney(sum)}</span>
+      </div>
+      <table><thead><tr><th>Kıyafet</th><th class="num">Adet</th><th class="num">Birim</th><th class="num">Tutar</th></tr></thead>
+      <tbody>${rowsHtml}</tbody></table>
+    `;
+    rWrap.appendChild(box);
+  });
+
+  if(entries.length===0){
+    rWrap.innerHTML = '<div class="empty-state"><span class="big">✅</span>Şu anda kimsenin üzerinde teslim edilmemiş kıyafet yok.</div>';
+  }
+
+  document.getElementById('raporKpi').innerHTML = `
+    <div class="kpi"><div class="k-label">Zimmetli kişi sayısı</div><div class="k-val accent">${peopleCount}</div></div>
+    <div class="kpi"><div class="k-label">Dışarıdaki parça sayısı</div><div class="k-val amber">${totalQty}</div></div>
+    <div class="kpi"><div class="k-label">Dışarıdaki toplam değer</div><div class="k-val">${fmtMoney(totalVal)}</div></div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   GEÇMİŞ
+--------------------------------------------------------- */
+function txRow(tx, withActions){
+  const tr = document.createElement('tr');
+  let who = '', badge = '';
+  if(tx.type==='TESLIM'){
+    badge = '<span class="badge teslim">Teslim</span>';
+    who = personById(tx.personId)?.name || '—';
+  } else if(tx.type==='IADE'){
+    badge = '<span class="badge iade">İade</span>';
+    who = personById(tx.personId)?.name || '—';
+  } else {
+    badge = '<span class="badge devir">Devir</span>';
+    who = `${personById(tx.fromId)?.name||'—'} → ${personById(tx.toId)?.name||'—'}`;
+  }
+  tr.innerHTML = `
+    <td>${fmtDate(tx.date)}</td>
+    <td>${badge}</td>
+    <td>${escapeHtml(who)}</td>
+    <td class="num">${fmtMoney(tx.total)}</td>
+    ${withActions ? `<td></td>` : ''}
+  `;
+  if(withActions){
+    const cell = document.createElement('td');
+    cell.style.textAlign='right';
+    if(tx.type==='TESLIM'){
+      const pb = document.createElement('button');
+      pb.className='btn ghost'; pb.textContent='Yazdır';
+      pb.onclick=()=>printReceipt(tx);
+      cell.appendChild(pb);
+    }
+    const db = document.createElement('button');
+    db.className='btn ghost'; db.style.color='var(--danger)'; db.textContent='Sil';
+    db.onclick=()=>deleteTx(tx.id);
+    cell.appendChild(db);
+    tr.appendChild(cell);
+  }
+  return tr;
+}
+async function deleteTx(id){
+  state.transactions = state.transactions.filter(t=>t.id!==id);
+  await saveState();
+  showToast('Kayıt silindi.');
+  renderAll();
+}
+function renderHistory(){
+  const tbody = document.getElementById('historyBody');
+  tbody.innerHTML = '';
+  const list = state.transactions.slice().sort((a,b)=>b.createdAt-a.createdAt);
+  document.getElementById('historyEmpty').style.display = list.length===0 ? 'block' : 'none';
+  list.forEach(tx=>{
+    const withJob = document.createElement('tr');
+    // rebuild row including job column
+    let who='', badge='';
+    if(tx.type==='TESLIM'){ badge='<span class="badge teslim">Teslim</span>'; who = personById(tx.personId)?.name||'—'; }
+    else if(tx.type==='IADE'){ badge='<span class="badge iade">İade</span>'; who = personById(tx.personId)?.name||'—'; }
+    else { badge='<span class="badge devir">Devir</span>'; who = `${personById(tx.fromId)?.name||'—'} → ${personById(tx.toId)?.name||'—'}`; }
+    withJob.innerHTML = `
+      <td>${fmtDate(tx.date)}</td>
+      <td>${badge}</td>
+      <td>${escapeHtml(who)}</td>
+      <td>${escapeHtml(tx.job||'—')}</td>
+      <td class="num">${fmtMoney(tx.total)}</td>
+      <td></td>
+    `;
+    const cell = withJob.lastElementChild;
+    cell.style.textAlign = 'right';
+    if(tx.type==='TESLIM'){
+      const pb = document.createElement('button');
+      pb.className='btn ghost'; pb.textContent='Yazdır';
+      pb.style.marginRight='6px';
+      pb.onclick=()=>printReceipt(tx);
+      cell.appendChild(pb);
+    }
+    const db = document.createElement('button');
+    db.className='btn ghost'; db.style.color='var(--danger)'; db.textContent='Sil';
+    db.onclick=()=>deleteTx(tx.id);
+    cell.appendChild(db);
+    tbody.appendChild(withJob);
+  });
+}
+
+/* ---------------------------------------------------------
+   PRINT: Teslim tutanağı
+--------------------------------------------------------- */
+function printReceipt(tx){
+  const person = personById(tx.personId);
+  const rowsHtml = tx.items.map(it=>`
+    <tr><td>${it.tip}</td><td>${CATALOG[it.tip].sizes ? it.variant+' Beden' : it.variant}</td>
+    <td style="text-align:right;">${it.qty}</td><td style="text-align:right;">${fmtMoney(it.price)}</td>
+    <td style="text-align:right;">${fmtMoney(it.qty*it.price)}</td></tr>
+  `).join('');
+  const html = `
+    <div class="receipt-head">
+      <div>
+        <h1>Kıyafet Teslim Tutanağı</h1>
+        <div class="r-sub">Zimmet Defteri</div>
+      </div>
+      <div class="r-sub">Tutanak No: ${tx.id.toUpperCase()}</div>
+    </div>
+    <div class="receipt-meta">
+      <div><div class="m-label">Tarih</div><div class="m-val">${fmtDate(tx.date)}</div></div>
+      <div><div class="m-label">Teslim alan</div><div class="m-val">${escapeHtml(person?.name||'—')}</div></div>
+      <div><div class="m-label">Telefon</div><div class="m-val">${escapeHtml(person?.phone||'—')}</div></div>
+      <div><div class="m-label">İş / lokasyon</div><div class="m-val">${escapeHtml(tx.job||'—')}</div></div>
+    </div>
+    <table class="receipt-table">
+      <thead><tr><th>Ürün</th><th>Beden / Renk</th><th style="text-align:right;">Adet</th><th style="text-align:right;">Birim fiyat</th><th style="text-align:right;">Tutar</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="receipt-total">Genel toplam: ${fmtMoney(tx.total)}</div>
+    <div class="receipt-note">Yukarıda belirtilen kıyafetleri eksiksiz ve sağlam olarak teslim aldım. İş bitiminde depoya iade etmeyi veya yetkili bir devir tutanağı ile başka bir kişiye devretmeyi taahhüt ederim.</div>
+    <div class="sign-grid">
+      <div class="sign-box"><div class="sign-line">Teslim eden (imza)</div></div>
+      <div class="sign-box"><div class="sign-line">Teslim alan (imza) — ${escapeHtml(person?.name||'')}</div></div>
+    </div>
+  `;
+  document.getElementById('print-area').innerHTML = html;
+  window.print();
+}
+
+function printReport(){
+  const bal = computeBalances();
+  const entries = state.people
+    .map(p=>({ person:p, rows: Object.values(bal[p.id]||{}).filter(r=>r.qty>0) }))
+    .filter(e=>e.rows.length>0)
+    .sort((a,b)=>a.person.name.localeCompare(b.person.name,'tr'));
+  let grand = 0;
+  const blocks = entries.map(e=>{
+    let sum = 0;
+    const rows = e.rows.map(r=>{ sum += r.qty*r.price; return `<tr><td>${itemLabel(r.tip,r.variant)}</td><td style="text-align:right;">${r.qty}</td><td style="text-align:right;">${fmtMoney(r.price)}</td><td style="text-align:right;">${fmtMoney(r.qty*r.price)}</td></tr>`; }).join('');
+    grand += sum;
+    return `<div style="margin-bottom:16px;">
+      <div style="font-weight:700;margin-bottom:6px;">${escapeHtml(e.person.name)} — ${fmtMoney(sum)}</div>
+      <table class="receipt-table"><thead><tr><th>Kıyafet</th><th style="text-align:right;">Adet</th><th style="text-align:right;">Birim</th><th style="text-align:right;">Tutar</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </div>`;
+  }).join('');
+  const html = `
+    <div class="receipt-head">
+      <div><h1>Durum Raporu</h1><div class="r-sub">Zimmet Defteri</div></div>
+      <div class="r-sub">${fmtDate(todayISO())}</div>
+    </div>
+    ${blocks || '<p>Şu anda kimsenin üzerinde teslim edilmemiş kıyafet yok.</p>'}
+    <div class="receipt-total">Genel toplam: ${fmtMoney(grand)}</div>
+  `;
+  document.getElementById('print-area').innerHTML = html;
+  window.print();
+}
+
+/* ---------------------------------------------------------
+   İNDİRME (CSV rapor + JSON tam yedek)
+--------------------------------------------------------- */
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1500);
+}
+function toCSVValue(v){
+  const s = String(v==null ? '' : v);
+  if(/[",;\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+function downloadReportCSV(){
+  const bal = computeBalances();
+  const rows = [['Kisi','Urun','Beden/Renk','Adet','Birim Fiyat','Tutar']];
+  state.people.slice().sort((a,b)=>a.name.localeCompare(b.name,'tr')).forEach(p=>{
+    const items = Object.values(bal[p.id]||{}).filter(r=>r.qty>0);
+    items.forEach(r=>{
+      rows.push([p.name, r.tip, r.variant, r.qty, r.price.toFixed(2), (r.qty*r.price).toFixed(2)]);
+    });
+  });
+  if(rows.length===1){ showToast('İndirilecek zimmetli kıyafet yok.'); return; }
+  const csv = '\uFEFF' + rows.map(r=>r.map(toCSVValue).join(';')).join('\r\n');
+  downloadBlob(csv, `durum-raporu-${todayISO()}.csv`, 'text/csv;charset=utf-8;');
+}
+function downloadBackupJSON(){
+  downloadBlob(JSON.stringify(state, null, 2), `zimmet-defteri-yedek-${todayISO()}.json`, 'application/json');
+  showToast('Yedek indirildi.');
+}
+
+/* ---------------------------------------------------------
+   RENDER ALL
+--------------------------------------------------------- */
+function renderAll(){
+  // people selects
+  fillPeopleSelect(document.getElementById('teslimKisi'));
+  fillPeopleSelect(document.getElementById('devirFrom'));
+  fillPeopleSelect(document.getElementById('devirTo'), document.getElementById('devirFrom').value);
+  fillPeopleSelect(document.getElementById('iadeKisi'));
+  document.getElementById('teslimNoPerson').style.display = state.people.length===0 ? 'block':'none';
+
+  renderPeople();
+  renderDashboard();
+  renderRapor();
+  renderHistory();
+  renderDevirHoldings();
+  renderIadeHoldings();
+}
+
+/* ---------------------------------------------------------
+   INIT
+--------------------------------------------------------- */
+async function init(){
+  document.getElementById('teslimTarih').value = todayISO();
+  document.getElementById('devirTarih').value = todayISO();
+  document.getElementById('iadeTarih').value = todayISO();
+
+  await loadState();
+  if(teslimRows.length===0) addItemRow();
+  if(loaded) renderAll();
+}
+init();
+</script>
+</body>
+</html>
