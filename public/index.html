@@ -6,20 +6,21 @@
 <title>Zimmet Defteri — Kıyafet Teslim Takip</title>
 <style>
   :root{
-    --ink:#1C2320;
-    --ink-soft:#3C4640;
-    --paper:#EEF1EC;
-    --card:#FCFDFB;
-    --line:#D6DBD2;
-    --line-soft:#E4E7E0;
-    --accent:#2F6F55;
-    --accent-dark:#234F3D;
+    --ink:#17181C;
+    --ink-soft:#6B6E76;
+    --paper:#F1F1F3;
+    --card:#FFFFFF;
+    --line:#E3E3E7;
+    --line-soft:#EDEDF0;
+    --accent:#C8102E;
+    --accent-dark:#9C0C24;
+    --accent-soft:#FCE7EA;
     --amber:#B9821F;
     --amber-bg:#FBF1DD;
-    --danger:#AE3A32;
-    --danger-bg:#FBEAE8;
-    --sidebar:#1C2320;
-    --sidebar-soft:#2B342F;
+    --danger:#C2540E;
+    --danger-bg:#FBEEE3;
+    --sidebar:#111216;
+    --sidebar-soft:#212329;
     --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, "SFMono-Regular", "Roboto Mono", Menlo, Consolas, monospace;
   }
@@ -34,32 +35,43 @@
   }
   ::selection{background:var(--accent);color:#fff;}
 
+  @keyframes appIn{
+    from{opacity:0;transform:translateY(6px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  #app.app-enter{animation:appIn .5s ease;}
+
   /* Layout */
   #app{display:flex;min-height:100vh;}
   #sidebar{
-    width:230px;flex:none;background:var(--sidebar);color:#EDEFEA;
+    width:230px;flex:none;background:var(--sidebar);color:#E6E6E9;
     display:flex;flex-direction:column;padding:22px 0;
   }
   #sidebar .brand{
     padding:0 20px 20px 20px;border-bottom:1px solid var(--sidebar-soft);margin-bottom:10px;
   }
+  #sidebar .brand .logo-badge{
+    background:#fff;border-radius:10px;padding:8px 12px;display:inline-flex;align-items:center;margin-bottom:12px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+  }
+  #sidebar .brand .logo-badge img{display:block;height:26px;width:auto;}
   #sidebar .brand .mark{
-    font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#8FA89A;margin-bottom:4px;
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#8B8E96;margin-bottom:4px;
   }
   #sidebar .brand h1{
-    font-size:19px;margin:0;font-weight:700;letter-spacing:-0.01em;line-height:1.25;
+    font-size:17px;margin:0;font-weight:700;letter-spacing:-0.01em;line-height:1.25;color:#F2F2F4;
   }
   nav.tabs{display:flex;flex-direction:column;gap:1px;padding:10px 10px;flex:1;}
   nav.tabs button{
-    all:unset;cursor:pointer;color:#C7CFC7;padding:11px 12px;border-radius:7px;
+    all:unset;cursor:pointer;color:#B7B9C0;padding:11px 12px;border-radius:7px;
     font-size:14.5px;display:flex;align-items:center;gap:10px;transition:background .12s, color .12s;
   }
-  nav.tabs button .num{font-family:var(--font-mono);font-size:12px;color:#6C7C71;width:16px;}
+  nav.tabs button .num{font-family:var(--font-mono);font-size:12px;color:#6E7079;width:16px;}
   nav.tabs button:hover{background:var(--sidebar-soft);color:#fff;}
   nav.tabs button.active{background:var(--accent);color:#fff;}
-  nav.tabs button.active .num{color:#DDEDE5;}
+  nav.tabs button.active .num{color:#FBD3DA;}
   #sidebar .foot{padding:14px 20px 4px 20px;border-top:1px solid var(--sidebar-soft);}
-  #sidebar .foot .risk-label{font-size:11px;color:#8FA89A;letter-spacing:.03em;}
+  #sidebar .foot .risk-label{font-size:11px;color:#8B8E96;letter-spacing:.03em;}
   #sidebar .foot .risk-val{font-family:var(--font-mono);font-size:17px;color:#EDEFEA;font-weight:600;margin-top:2px;}
 
   main{flex:1;min-width:0;padding:32px 40px 60px 40px;}
@@ -122,7 +134,7 @@
 
   .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em;}
   .badge.teslim{background:var(--amber-bg);color:var(--amber);}
-  .badge.iade{background:#E1EFE8;color:var(--accent-dark);}
+  .badge.iade{background:#E4F0EA;color:#2C6B4F;}
   .badge.devir{background:#E7E9F3;color:#3B4392;}
 
   .person-pill{display:inline-flex;align-items:center;gap:6px;}
@@ -199,6 +211,97 @@
 
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-thumb{background:#c7cdc3;border-radius:6px;}
+
+  /* ---------------- Giriş ekranı ---------------- */
+  .login-screen{
+    display:none;position:fixed;inset:0;z-index:200;
+    align-items:center;justify-content:center;overflow:hidden;
+  }
+  .login-screen.show{display:flex;}
+  .login-bg{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(200,16,46,.18), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(200,16,46,.12), transparent 50%),
+      linear-gradient(160deg, #0B0C0F 0%, #17181D 55%, #0B0C0F 100%);
+  }
+  .login-glow{
+    position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;
+    animation:loginDrift 14s ease-in-out infinite alternate;
+  }
+  .login-glow-1{width:420px;height:420px;background:#C8102E;top:-120px;left:-100px;}
+  .login-glow-2{width:380px;height:380px;background:#3A3D46;bottom:-140px;right:-100px;animation-delay:2s;}
+  @keyframes loginDrift{
+    from{ transform:translate(0,0) scale(1); }
+    to{ transform:translate(40px,30px) scale(1.12); }
+  }
+
+  .login-card{
+    position:relative;z-index:1;width:380px;max-width:90vw;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:18px;
+    padding:38px 34px 30px 34px;
+    text-align:center;
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+    animation:loginCardIn .6s cubic-bezier(.2,.8,.2,1);
+  }
+  @keyframes loginCardIn{
+    from{opacity:0;transform:translateY(18px) scale(.96);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+  .login-logo{
+    display:inline-flex;background:#fff;border-radius:12px;padding:12px 18px;margin-bottom:20px;
+    box-shadow:0 12px 30px rgba(0,0,0,.35);
+    animation:loginLogoIn .7s cubic-bezier(.2,.8,.2,1) .1s backwards;
+  }
+  @keyframes loginLogoIn{
+    from{opacity:0;transform:translateY(-8px) scale(.9);}
+    to{opacity:1;transform:translateY(0) scale(1);}
+  }
+  .login-logo img{display:block;height:40px;width:auto;}
+  .login-title{
+    color:#F5F5F7;font-size:20px;font-weight:700;letter-spacing:-0.01em;margin-bottom:4px;
+  }
+  .login-sub{
+    color:#9A9CA6;font-size:13px;margin-bottom:24px;
+  }
+  .login-field{
+    position:relative;margin-bottom:14px;
+  }
+  .login-field-icon{
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:17px;height:17px;color:#8A8D97;pointer-events:none;
+  }
+  .login-field input{
+    width:100%;padding:13px 14px 13px 40px;border-radius:10px;
+    background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);
+    color:#F5F5F7;font-size:14.5px;font-family:var(--font-ui);
+    transition:border-color .15s, background .15s, box-shadow .15s;
+  }
+  .login-field input::placeholder{color:#75777F;}
+  .login-field input:focus{
+    outline:none;border-color:var(--accent);background:rgba(255,255,255,.1);
+    box-shadow:0 0 0 3px rgba(200,16,46,.25);
+  }
+  .login-err{
+    display:none;color:#FF8B7A;font-size:12.5px;margin:-2px 0 12px 0;text-align:left;padding-left:2px;
+  }
+  .login-err.show{display:block;}
+  .login-btn{
+    all:unset;box-sizing:border-box;display:block;width:100%;text-align:center;cursor:pointer;
+    background:linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color:#fff;font-weight:700;font-size:14.5px;padding:13px 0;border-radius:10px;
+    box-shadow:0 10px 26px rgba(200,16,46,.35);
+    transition:transform .12s, box-shadow .12s, filter .12s;
+  }
+  .login-btn:hover{filter:brightness(1.08);box-shadow:0 12px 30px rgba(200,16,46,.45);}
+  .login-btn:active{transform:translateY(1px);}
+  .login-foot{
+    margin-top:22px;color:#5E606A;font-size:11px;letter-spacing:.04em;
+  }
 </style>
 </head>
 <body>
@@ -206,6 +309,7 @@
 <div id="app">
   <aside id="sidebar">
     <div class="brand">
+      <div class="logo-badge"><img src="/logo.png" alt="My Staff"></div>
       <div class="mark">ZİMMET DEFTERİ</div>
       <h1>Kıyafet Teslim Takip</h1>
     </div>
@@ -410,17 +514,27 @@
 
 <div id="toast"></div>
 
-<div id="loginGate" class="modal-backdrop">
-  <div class="modal">
-    <h3>Zimmet Defteri — Giriş</h3>
-    <div class="field">
-      <label>Şifre</label>
-      <input type="password" id="loginPw" placeholder="Şifreyi girin" onkeydown="if(event.key==='Enter')submitLogin()">
+<div id="loginGate" class="login-screen">
+  <div class="login-bg">
+    <div class="login-glow login-glow-1"></div>
+    <div class="login-glow login-glow-2"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo"><img src="/logo.png" alt="My Staff"></div>
+    <div class="login-title">Zimmet Defteri</div>
+    <div class="login-sub">Devam etmek için şifrenizi girin</div>
+    <div class="login-field">
+      <svg class="login-field-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="10.5" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input type="password" id="loginPw" placeholder="Şifre" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitLogin()">
     </div>
-    <div id="loginErr" style="display:none;color:var(--danger);font-size:12.5px;margin-bottom:8px;">Şifre hatalı. Tekrar deneyin.</div>
-    <div class="actions">
-      <button class="btn block" onclick="submitLogin()">Giriş yap</button>
-    </div>
+    <div id="loginErr" class="login-err">Şifre hatalı. Tekrar deneyin.</div>
+    <button class="login-btn" onclick="submitLogin()">
+      <span>Giriş yap</span>
+    </button>
+    <div class="login-foot">My Staff · Zimmet Takip Sistemi</div>
   </div>
 </div>
 
@@ -480,29 +594,39 @@ async function saveState(){
 --------------------------------------------------------- */
 function showLoginGate(){
   document.getElementById('loginGate').classList.add('show');
+  setTimeout(()=>document.getElementById('loginPw')?.focus(), 350);
 }
 function hideLoginGate(){
-  document.getElementById('loginGate').classList.remove('show');
+  const gate = document.getElementById('loginGate');
+  gate.style.transition = 'opacity .35s ease';
+  gate.style.opacity = '0';
+  setTimeout(()=>{
+    gate.classList.remove('show');
+    gate.style.opacity = '';
+    gate.style.transition = '';
+  }, 320);
 }
 async function submitLogin(){
   const pw = document.getElementById('loginPw').value;
   const err = document.getElementById('loginErr');
-  err.style.display = 'none';
+  err.classList.remove('show');
   try{
     const res = await fetch('/api/login', {
       method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
     });
     if(res.ok){
-      hideLoginGate();
       document.getElementById('loginPw').value = '';
       await loadState();
       renderAll();
+      document.getElementById('app').classList.add('app-enter');
+      hideLoginGate();
     } else {
-      err.style.display = 'block';
+      err.textContent = 'Şifre hatalı. Tekrar deneyin.';
+      err.classList.add('show');
     }
   }catch(e){
     err.textContent = 'Sunucuya bağlanılamadı.';
-    err.style.display = 'block';
+    err.classList.add('show');
   }
 }
 
@@ -609,7 +733,9 @@ function personLots(personId){
       }
       if(tx.toId===personId){
         tx.items.forEach(it=>{
-          addLot(itemKey(it.tip,it.variant), it.tip, it.variant, it.price, it.qty, tx.job, tx.date, 'Devir');
+          const job = (it.sourceJob !== undefined && it.sourceJob !== '') ? it.sourceJob : tx.job;
+          const date = (it.sourceDate !== undefined && it.sourceDate !== '') ? it.sourceDate : tx.date;
+          addLot(itemKey(it.tip,it.variant), it.tip, it.variant, it.price, it.qty, job, date, 'Devir');
         });
       }
     }
@@ -1267,7 +1393,7 @@ function personHistory(personId){
 function describeTxForPerson(tx, personId){
   const parts = tx.items.map(it=>{
     let s = `${it.qty} ${itemLabel(it.tip, it.variant)}`;
-    if(tx.type==='IADE' && it.sourceJob){ s += ` (${it.sourceJob} işinden)`; }
+    if((tx.type==='IADE' || tx.type==='DEVIR') && it.sourceJob){ s += ` (${it.sourceJob} işinden)`; }
     return s;
   }).join(', ');
 
@@ -1331,14 +1457,15 @@ function renderAll(){
 /* ---------------------------------------------------------
    INIT
 --------------------------------------------------------- */
-async function init(){
+function init(){
   document.getElementById('teslimTarih').value = todayISO();
   document.getElementById('devirTarih').value = todayISO();
   document.getElementById('iadeTarih').value = todayISO();
-
-  await loadState();
   if(teslimRows.length===0) addItemRow();
-  if(loaded) renderAll();
+
+  // Uygulama her açıldığında (her sayfa yüklemesinde) şifre sorulur —
+  // önceden geçerli bir oturum çerezi olsa bile veri otomatik yüklenmez.
+  showLoginGate();
 }
 init();
 </script>
